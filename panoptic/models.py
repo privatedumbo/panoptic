@@ -1,4 +1,3 @@
-from enum import StrEnum
 from pathlib import Path
 from typing import Any
 
@@ -21,18 +20,28 @@ class Entity(BaseModel):
     metadata: dict[str, Any]
 
 
-class EntityType(StrEnum):
-    PERSON = "PERSON"
-    ORG = "ORG"
-    GPE = "GPE"
+class WikidataType(BaseModel):
+    """A Wikidata type entry (from P31 instance_of)."""
+
+    id: str
+    label: str
+
+
+class KnowledgeBaseRef(BaseModel):
+    """Pointer into external knowledge graphs."""
+
+    wikidata_id: str | None = None
+    google_kg_id: str | None = None
 
 
 class ResolvedEntity(BaseModel):
-    """A single canonical entity with all of its surface mentions."""
+    """A canonical entity anchored to external knowledge graphs."""
 
     canonical_name: str
-    entity_type: EntityType
+    entity_type: str
     mentions: list[str]
+    kb_ref: KnowledgeBaseRef = KnowledgeBaseRef()
+    instance_of: list[WikidataType] = []
 
 
 class ResolutionResult(BaseModel):
@@ -42,19 +51,22 @@ class ResolutionResult(BaseModel):
 
     def display(self) -> str:
         """Format the result for human-readable output."""
-        grouped: dict[EntityType, list[ResolvedEntity]] = {}
+        grouped: dict[str, list[ResolvedEntity]] = {}
         for entity in self.entities:
             grouped.setdefault(entity.entity_type, []).append(entity)
 
         lines: list[str] = []
-        for entity_type in EntityType:
-            entities = grouped.get(entity_type, [])
-            if not entities:
-                continue
-            lines.append(f"\n{entity_type.value}")
-            lines.append("-" * len(entity_type.value))
+        for entity_type, entities in grouped.items():
+            lines.append(f"\n{entity_type}")
+            lines.append("-" * len(entity_type))
             for e in sorted(entities, key=lambda x: x.canonical_name):
                 mentions = ", ".join(e.mentions)
-                lines.append(f"  {e.canonical_name}: {mentions}")
+                parts = [f"  {e.canonical_name}: {mentions}"]
+                if e.kb_ref.wikidata_id:
+                    parts.append(f"    [{e.kb_ref.wikidata_id}]")
+                if e.instance_of:
+                    type_labels = ", ".join(t.label for t in e.instance_of)
+                    parts.append(f"    types: {type_labels}")
+                lines.extend(parts)
 
         return "\n".join(lines)

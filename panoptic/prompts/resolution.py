@@ -1,8 +1,10 @@
+"""Prompts for LLM-based entity resolution."""
+
 import json
 
 from panoptic.models import Entity
 
-SYSTEM_PROMPT = """\
+RESOLUTION_SYSTEM_PROMPT = """\
 You are an entity resolution expert.  Given a text and a set of named-entity \
 mentions extracted by an NER system, your job is to:
 
@@ -20,21 +22,22 @@ Return **only** valid JSON matching this schema — no commentary:
   "entities": [
     {
       "canonical_name": "<best proper name>",
-      "entity_type": "<PERSON | ORG | GPE>",
+      "entity_type": "<coarse type string, e.g. PERSON, ORG, GPE>",
       "mentions": ["<mention1>", "<mention2>", ...]
     }
   ]
 }
 
 Rules:
-- entity_type must be one of: PERSON, ORG, GPE.
+- entity_type should be a short uppercase label such as PERSON, ORG, or GPE.
 - Every extracted mention must appear in exactly one group.
 - Do NOT invent entities that are not referenced in the text.
 - Mentions should be the exact surface forms found in the text.
 """
 
 
-def build_user_prompt(text: str, mentions: list[Entity]) -> str:
+def build_resolution_prompt(text: str, mentions: list[Entity]) -> str:
+    """Build the user prompt for entity resolution."""
     unique_mentions = sorted({m.text for m in mentions})
     mention_lines = json.dumps(unique_mentions, ensure_ascii=False)
     return f'Text:\n"""\n{text}\n"""\n\nExtracted NER mentions:\n{mention_lines}'

@@ -1,8 +1,8 @@
 # Panoptic
 
-PDF entity extraction and resolution pipeline.
+PDF entity extraction, resolution, and knowledge graph linking pipeline.
 
-Panoptic parses PDF documents, extracts named entities (people, organisations, locations) using NER, and resolves them to canonical forms via an LLM — grouping every mention that refers to the same real-world entity.
+Panoptic parses PDF documents, extracts named entities (people, organisations, locations) using NER, resolves them to canonical forms via an LLM, and links them to [Wikidata](https://www.wikidata.org/) — enabling roll-up and roll-down across the Wikidata type hierarchy.
 
 ## Table of contents
 
@@ -21,7 +21,8 @@ Panoptic parses PDF documents, extracts named entities (people, organisations, l
 PDF  →  Text extraction (Docling)
      →  Named Entity Recognition (spaCy / semantica)
      →  Entity Resolution (LLM via litellm)
-     →  Canonical entities with grouped mentions
+     →  Wikidata Linking (wbsearchentities + SPARQL)
+     →  Canonical entities with QIDs, types, and grouped mentions
 ```
 
 ## Quick start
@@ -41,20 +42,16 @@ uv run poe install-hooks
 Download a sample PDF into the `data/` folder and run the pipeline:
 
 ```bash
-# Download the paper
-curl -L -o data/ssrn-5317150.pdf \
-  "https://papers.ssrn.com/sol3/Delivery.cfm/5317150.pdf?abstractid=5317150&mirid=1"
+# Download a paper (any PDF works)
+curl -L -o data/sample.pdf "https://arxiv.org/pdf/2501.00001v1"
 
 # Run the pipeline
-uv run panoptic/main.py data/ssrn-5317150.pdf
+uv run panoptic/main.py data/sample.pdf
 ```
 
 ### Usage
 
 ```bash
-# Via CLI
-panoptic path/to/document.pdf
-
 # Or as a module
 python -m panoptic.main path/to/document.pdf
 ```
@@ -71,6 +68,8 @@ All settings can be overridden via environment variables with the `PANOPTIC_` pr
 | `PANOPTIC_NER_ENTITY_TYPES` | `PERSON,ORG,GPE` | Entity types to extract |
 | `PANOPTIC_NER_MIN_CONFIDENCE` | `0.6` | Minimum NER confidence threshold |
 | `PANOPTIC_CACHE_DIR` | `~/.cache/panoptic` | Disk cache directory |
+| `PANOPTIC_WIKIDATA_ENABLED` | `True` | Enable Wikidata entity linking |
+| `PANOPTIC_WIKIDATA_LANGUAGE` | `en` | Language for Wikidata search and labels |
 
 #### LLM providers
 
@@ -88,7 +87,7 @@ Panoptic uses [litellm](https://docs.litellm.ai/docs/providers) for LLM calls, s
 export ANTHROPIC_API_KEY="sk-ant-..."
 export PANOPTIC_LLM_MODEL="anthropic/claude-sonnet-4-20250514"
 
-uv run panoptic/main.py data/ssrn-5317150.pdf
+uv run panoptic/main.py data/sample.pdf
 ```
 
 See the [litellm provider docs](https://docs.litellm.ai/docs/providers) for the full list of supported providers and their required environment variables.

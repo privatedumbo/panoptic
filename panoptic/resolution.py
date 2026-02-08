@@ -14,7 +14,7 @@ from typing import Any
 import litellm
 
 from panoptic.models import Document, Entity, ResolutionResult
-from panoptic.prompts import SYSTEM_PROMPT, build_user_prompt
+from panoptic.prompts import RESOLUTION_SYSTEM_PROMPT, build_resolution_prompt
 from panoptic.settings import PanopticSettings
 
 logger = logging.getLogger(__name__)
@@ -43,12 +43,12 @@ class EntityResolver:
         mentions: list[Entity],
     ) -> ResolutionResult:
         """Send the resolution prompt to the configured LLM and parse output."""
-        user_prompt = build_user_prompt(document.text, mentions)
+        user_prompt = build_resolution_prompt(document.text, mentions)
 
         response: Any = litellm.completion(
             model=self.settings.llm_model,
             messages=[
-                {"role": "system", "content": SYSTEM_PROMPT},
+                {"role": "system", "content": RESOLUTION_SYSTEM_PROMPT},
                 {"role": "user", "content": user_prompt},
             ],
             response_format={"type": "json_object"},

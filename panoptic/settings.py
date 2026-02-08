@@ -27,6 +27,10 @@ class PanopticSettings(BaseSettings):
     # LLM
     llm_model: str = "openai/gpt-4o-mini"
 
+    # Wikidata linking
+    wikidata_enabled: bool = True
+    wikidata_language: str = "en"
+
 
 @functools.lru_cache(maxsize=1)
 def get_settings() -> PanopticSettings:
