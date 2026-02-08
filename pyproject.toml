@@ -1,0 +1,113 @@
+[project]
+name = "panoptic"
+version = "0.0.1"
+description = "PDF entity extraction and resolution pipeline"
+readme = "README.md"
+license = { text = "MIT" }
+authors = [ { name = "Franco Bocci", email = "francogbocci@gmail.com" } ]
+requires-python = ">=3.12"
+dependencies = [
+    "diskcache>=5.6.3",
+    "docling>=2.72.0",
+    "litellm>=1.81.9",
+    "loguru>=0.7.3",
+    "pdfplumber>=0.11.9",
+    "pydantic-settings>=2.0",
+    "semantica",
+    "en_core_web_trf @ https://github.com/explosion/spacy-models/releases/download/en_core_web_trf-3.8.0/en_core_web_trf-3.8.0-py3-none-any.whl",
+]
+
+[project.scripts]
+panoptic = "panoptic.main:cli"
+
+[project.urls]
+Homepage = "https://github.com/fbocci/panoptic"
+Repository = "https://github.com/fbocci/panoptic"
+Issues = "https://github.com/fbocci/panoptic/issues"
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.hatch.metadata]
+allow-direct-references = true
+
+[tool.hatch.build.targets.wheel]
+packages = ["panoptic"]
+
+[dependency-groups]
+dev = [
+    "mypy",
+    "poethepoet",
+    "pre-commit",
+    "pytest",
+    "pytest-cov",
+    "ruff",
+]
+
+[tool.pytest.ini_options]
+addopts = """\
+    --cov panoptic \
+    --cov-report term-missing \
+    --no-cov-on-fail
+"""
+
+[tool.coverage.report]
+exclude_lines = [
+    # Don't complain about lines explicitly marked as uncoverable
+    "pragma: no cover",
+    # Don't complain about type checking code
+    "if TYPE_CHECKING:",
+    # Don't complain about not-implemented parts of code
+    "raise NotImplementedError",
+    # Don't complain about abstract methods, they aren't run
+    '@(abc\.)?abstractmethod',
+]
+# least covered on top, most covered on bottom
+# default is "name", and to reverse the order use "-cover"
+skip_covered = "true"
+sort = "cover"
+
+[tool.ruff]
+target-version = "py313"
+output-format = "full"
+line-length = 88
+fix = true
+
+[tool.ruff.lint]
+select = ["ALL"]
+ignore = [
+    "ANN",      # Type hints related, let mypy handle these.
+    "COM812",   # "Trailing comma missing". If black is happy, we are happy.
+    "D",        # Docstrings related, way too strict to our taste
+    "ISC001",   # Implicit string concatenation
+]
+
+[tool.ruff.lint.per-file-ignores]
+"panoptic/main.py" = [
+    "T201",     # `print` is the correct output method for a CLI entry point
+]
+"tests/**" = [
+    "ARG",      # "Unused function argument". Fixtures are often unused.
+    "S101",     # "Use of `assert` detected"
+    "S106",     # "Possible hardcoded password"
+    "PT004",    # Does not return anything, add leading underscore
+    "PLR2004",  # Magic value used in comparison
+]
+
+[tool.mypy]
+strict = true
+namespace_packages = true
+explicit_package_bases = true
+plugins = []
+ignore_missing_imports = true
+
+[tool.uv]
+override-dependencies = [
+    "llvmlite>=0.43.0",
+    "numba>=0.60.0",
+    "umap-learn>=0.5.7",
+]
+
+[tool.poe]
+include = "scripts/app.toml"
